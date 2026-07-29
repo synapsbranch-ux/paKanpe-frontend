@@ -1,16 +1,36 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Brand } from "@/components/Brand";
+import { roleHome } from "@/lib/api";
+import type { User } from "@/lib/types";
 
 export default function Home() {
   const router = useRouter();
   const [code, setCode] = useState("");
+  const [sessionChecked, setSessionChecked] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/auth/me", { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) return null;
+        return response.json() as Promise<User>;
+      })
+      .then((user) => {
+        if (user) router.replace(roleHome(user.role));
+        else setSessionChecked(true);
+      })
+      .catch(() => setSessionChecked(true));
+  }, [router]);
+
   function track(event: FormEvent) {
     event.preventDefault();
     if (code.trim()) router.push("/client/tickets/" + code.trim().toUpperCase());
+  }
+  if (!sessionChecked) {
+    return <main className="center-page"><div className="loader" /><p>Vérification de votre session…</p></main>;
   }
   return (
     <main className="landing">
@@ -37,4 +57,3 @@ export default function Home() {
     </main>
   );
 }
-
